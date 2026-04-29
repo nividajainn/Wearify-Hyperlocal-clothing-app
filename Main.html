@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wearify • Clothing Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- SIGNUP SCREEN -->
+  <div class="center" id="signupScreen">
+    <div class="card">
+      <div class="brand">Wearify</div>
+      <div class="logo-word">Everyday <span class="logo-accent">Clothing</span></div>
+      <div class="auth-title">Create Account</div>
+      <div class="auth-sub">Save your favourite looks in one place</div>
+      
+      <div class="input-group">
+        <label for="nameInput">Full Name</label>
+        <input id="nameInput" class="input" type="text" placeholder="Aarav Mehta">
+      </div>
+      
+      <div class="input-group">
+        <label for="phoneSignup">Phone</label>
+        <input id="phoneSignup" class="input" type="tel" placeholder="+91 9876543210">
+      </div>
+      
+      <button class="btn btn-primary" onclick="handleSignup()">Continue</button>
+      <button class="btn btn-ghost" onclick="showLogin()">Have Account? Login</button>
+    </div>
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <div class="center hide" id="loginScreen">
+    <div class="card">
+      <div class="brand">Wearify</div>
+      <div class="logo-word">Welcome <span class="logo-accent">Back</span></div>
+      <div class="auth-title">Sign In</div>
+      
+      <div class="input-group">
+        <label for="phoneLogin">Phone</label>
+        <input id="phoneLogin" class="input" type="tel" placeholder="+91 9876543210">
+      </div>
+      
+      <button class="btn btn-primary" onclick="handleLogin()">Continue</button>
+      <button class="btn btn-ghost" onclick="showSignup()">New? Create Account</button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div class="app hide" id="mainApp">
+    <aside class="sidebar">
+      <div class="side-header">
+        <div class="side-logo">Wearify</div>
+        <div class="side-main">Clothing <span>Studio</span></div>
+        <div class="side-user" id="userInfo">Guest</div>
+        <div class="looks-count" id="looksCount">Looks: 0</div>
+      </div>
+      
+      <nav class="nav">
+        <button class="nav-btn active" data-screen="home"><span>●</span> Home</button>
+        <button class="nav-btn" data-screen="categories"><span>✧</span> Categories</button>
+        <button class="nav-btn" data-screen="looks"><span>⌾</span> My Looks</button>
+        <button class="nav-btn" data-screen="studio"><span>▣</span> Studio</button>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <!-- HOME -->
+      <section id="home" class="screen active">
+        <h1 class="hero-heading">Today's Picks</h1>
+        <div class="grid" id="homeProducts"></div>
+      </section>
+
+      <!-- CATEGORIES -->
+      <section id="categories" class="screen hide">
+        <h1 class="hero-heading">All Categories</h1>
+        <div class="grid" id="categoryProducts"></div>
+      </section>
+
+      <!-- MY LOOKS -->
+      <section id="looks" class="screen hide">
+        <h1 class="hero-heading">Your Saved Looks</h1>
+        <div id="savedLooks"></div>
+      </section>
+
+      <!-- STUDIO -->
+      <section id="studio" class="screen hide">
+        <h1 class="hero-heading">Studio Panel</h1>
+        <p>Saved looks analytics coming soon...</p>
+      </section>
+    </main>
+  </div>
+
+  <!-- PRODUCT MODAL -->
+  <div class="modal hide" id="productModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">-</h2>
+        <button class="close" onclick="closeModal()">×</button>
+      </div>
+      <img id="modalImg" class="product-img" src="" alt="">
+      <div id="modalPrice" class="price">-</div>
+      <div id="modalDesc" class="desc"></div>
+      <div class="sizes" id="sizes"></div>
+      <button class="btn btn-primary full" onclick="saveLook()">Save Look</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
