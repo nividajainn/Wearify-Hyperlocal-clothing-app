@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { addShopProduct } from '../../services/shopService'
+import { errorMessage } from '../../services/api'
 
 const CATEGORIES = ['Dresses', 'Formals', 'Jackets', 'Casuals', 'Ethnic', 'Accessories', 'Sportswear', 'Party Wear']
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size']
@@ -8,7 +9,7 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size']
 const ShopAddProduct = () => {
   const [form, setForm] = useState({
     name: '', description: '', category: '', price: '', rentalPrice: '',
-    stock: '', sizes: [], available: true,
+    stock: '', sizes: [], available: true, image: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -44,8 +45,8 @@ const ShopAddProduct = () => {
       })
       setSuccess(true)
       setTimeout(() => navigate('/shop/products'), 1800)
-    } catch {
-      setError('Failed to add product. Please try again.')
+    } catch (err) {
+      setError(errorMessage(err, 'Failed to add product. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -94,6 +95,11 @@ const ShopAddProduct = () => {
                 rows={3}
                 style={{ resize: 'vertical' }}
               />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Image Link</label>
+              <input className="form-input shop" name="image" placeholder="https://… (photo of the item)" value={form.image} onChange={handleChange} />
             </div>
 
             <div className="form-group">

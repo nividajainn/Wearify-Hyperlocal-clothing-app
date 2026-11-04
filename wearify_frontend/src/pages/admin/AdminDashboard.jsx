@@ -35,7 +35,7 @@ const AdminDashboard = () => {
     { label: 'Total Orders', value: stats?.totalOrders ?? 0, color: '#16a34a', bg: '#f0fdf4' },
     { label: 'Revenue', value: `₹${(stats?.totalRevenue ?? 0).toLocaleString('en-IN')}`, color: '#16a34a', bg: '#f0fdf4' },
     { label: 'Pending Approvals', value: stats?.pendingShops ?? 0, color: '#d97706', bg: '#fffbeb' },
-    { label: 'Active Delivery', value: stats?.activeDelivery ?? 0, color: '#7c3aed', bg: '#f5f3ff' },
+    { label: 'Delivery Partners', value: stats?.activeDelivery ?? 0, color: '#7c3aed', bg: '#f5f3ff' },
   ]
 
   const quickActions = [
@@ -104,10 +104,8 @@ const AdminDashboard = () => {
           <h3 className="card-title" style={{ fontSize: 20, marginBottom: 20 }}>Platform Status</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {[
-              { label: 'API Server', status: 'Operational' },
-              { label: 'Payment Gateway', status: 'Operational' },
-              { label: 'SMS Notifications', status: 'Operational' },
-              { label: 'Image Storage', status: 'Operational' },
+              { label: 'API', status: stats ? 'Operational' : 'Unavailable' },
+              { label: 'Database', status: stats ? 'Operational' : 'Unavailable' },
             ].map(item => (
               <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 15, color: 'var(--text-secondary)' }}>{item.label}</span>

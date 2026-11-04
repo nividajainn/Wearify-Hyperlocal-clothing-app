@@ -26,7 +26,7 @@ const AdminOrders = () => {
     fetchData()
   }, [])
 
-  const statuses = ['ALL', 'PENDING', 'PROCESSING', 'ASSIGNED', 'DELIVERED', 'CANCELLED']
+  const statuses = ['ALL', 'PENDING', 'PROCESSING', 'ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
   const filtered = filter === 'ALL' ? orders : orders.filter(o => o.status === filter)
 
   if (loading) return <LoadingSpinner text="Loading orders…" accent="var(--accent-admin)" />
