@@ -8,7 +8,7 @@ const LoginPage = () => {
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { login } = useAuth()
+  const { login, notice, clearNotice } = useAuth()
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -21,12 +21,13 @@ const LoginPage = () => {
     if (!form.email || !form.password) { setError('Please fill in all fields.'); return }
     setLoading(true)
     setError('')
+    clearNotice()
     try {
-      const data = await loginUser(form)
-      login(data)
-      navigate(getRoleRedirect(data.role), { replace: true })
+      const profile = await loginUser(form)
+      login(profile)
+      navigate(getRoleRedirect(profile.role), { replace: true })
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password. Please try again.')
+      setError(err.message)
     } finally {
       setLoading(false)
     }
@@ -44,14 +45,16 @@ const LoginPage = () => {
         </div>
 
         <h1 className="auth-title">Welcome back</h1>
-        <p className="auth-subtitle">Sign in to your account to continue</p>
+        <p className="auth-subtitle">Rent or buy outfits from shops near you</p>
 
-        {error && <div className="alert-strip alert-error">Error: {error}</div>}
+        {notice && <div className="alert-strip alert-success">{notice} Please sign in.</div>}
+        {error && <div className="alert-strip alert-error">{error}</div>}
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="form-label" htmlFor="login-email">Email Address</label>
             <input
+              id="login-email"
               className="form-input"
               type="email"
               name="email"
@@ -63,8 +66,9 @@ const LoginPage = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Password</label>
+            <label className="form-label" htmlFor="login-password">Password</label>
             <input
+              id="login-password"
               className="form-input"
               type="password"
               name="password"
@@ -95,25 +99,9 @@ const LoginPage = () => {
           <Link to="/register">Create one</Link>
         </div>
 
-        <div className="divider" style={{ marginTop: 24 }} />
-        <button
-          className="btn btn-outline btn-full"
-          style={{ marginTop: 16, borderColor: 'var(--accent-admin)', color: 'var(--accent-admin)' }}
-          onClick={(e) => {
-            e.preventDefault();
-            setForm({ email: 'admin@wearify.com', password: 'admin123' });
-            setTimeout(() => {
-              // Programmatically trigger submit after state updates
-              document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-            }, 50);
-          }}
-        >
-          Demo Admin Login
-        </button>
-
         <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', marginTop: 16 }}>
-          Admin accounts are provisioned by the system.<br />
-          Shop & Delivery partners can self-register.
+          Customers, shop owners and delivery partners can sign up.<br />
+          Admin access is granted by the Wearify team.
         </p>
       </div>
     </div>

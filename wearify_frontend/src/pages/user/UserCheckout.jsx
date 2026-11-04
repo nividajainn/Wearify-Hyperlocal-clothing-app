@@ -1,13 +1,29 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { checkoutOrder } from '../../services/orderService'
+import { getMyCart } from '../../services/cartService'
+import { errorMessage } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
+import LoadingSpinner from '../../components/common/LoadingSpinner'
 
 const UserCheckout = () => {
-  const [form, setForm] = useState({ address: '', city: '', pincode: '', phone: '', paymentMethod: 'COD' })
+  const { user } = useAuth()
+  const [form, setForm] = useState({ address: '', city: '', pincode: '', phone: user?.phone || '', paymentMethod: 'COD' })
+  const [cart, setCart] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    getMyCart()
+      .then(data => setCart(Array.isArray(data) ? data : []))
+      .catch(err => { setCart([]); setError(errorMessage(err, 'Could not load your cart.')) })
+  }, [])
+
+  const subtotal = (cart ?? []).reduce((s, i) => s + i.price * i.quantity, 0)
+  const delivery = new Set((cart ?? []).map(i => i.shopId)).size * 49
+  const total = subtotal + delivery
 
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -20,16 +36,29 @@ const UserCheckout = () => {
       setError('Please fill in all delivery details.')
       return
     }
+    if (!/^\d{6}$/.test(form.pincode)) { setError('PIN code must be 6 digits.'); return }
     setLoading(true); setError('')
     try {
       await checkoutOrder(form)
       setSuccess(true)
       setTimeout(() => navigate('/user/orders'), 2500)
-    } catch {
-      setError('Checkout failed. Please try again.')
+    } catch (err) {
+      setError(errorMessage(err, 'Checkout failed. Please try again.'))
     } finally {
       setLoading(false)
     }
+  }
+
+  if (cart === null) return <LoadingSpinner text="Loading checkout…" accent="var(--accent-user)" />
+
+  if (!success && cart.length === 0 && !error) {
+    return (
+      <div className="card" style={{ textAlign: 'center', padding: 48 }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: 8 }}>Your cart is empty</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: 20 }}>Add something you love before checking out.</p>
+        <button className="btn btn-user" onClick={() => navigate('/user/products')}>Browse Products</button>
+      </div>
+    )
   }
 
   if (success) {
@@ -124,18 +153,24 @@ const UserCheckout = () => {
         <div className="card" style={{ position: 'sticky', top: 80 }}>
           <h3 className="card-title" style={{ marginBottom: 16 }}>Order Summary</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14, color: 'var(--text-secondary)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Subtotal</span><span>₹398</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Delivery</span><span>₹49</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Taxes</span><span>₹20</span></div>
+            {cart.map(i => (
+              <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                <span>{i.productName} × {i.quantity} <span style={{ color: 'var(--text-muted)' }}>({i.type === 'RENT' ? 'rent' : 'buy'})</span></span>
+                <span>₹{(i.price * i.quantity).toLocaleString('en-IN')}</span>
+              </div>
+            ))}
+            <div className="divider" />
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Subtotal</span><span>₹{subtotal.toLocaleString('en-IN')}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Delivery</span><span>₹{delivery}</span></div>
             <div className="divider" />
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>Total</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: 'var(--accent-user)' }}>₹467</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: 'var(--accent-user)' }}>₹{total.toLocaleString('en-IN')}</span>
             </div>
           </div>
           <div className="divider" />
           <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            🔒 Your payment info is secure and encrypted. By placing an order you agree to our Terms & Conditions.
+            Payment is collected on delivery. UPI and card are paid to the delivery partner at your door.
           </div>
         </div>
       </div>

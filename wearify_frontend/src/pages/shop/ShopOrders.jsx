@@ -2,24 +2,37 @@ import React, { useState, useEffect } from 'react'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import EmptyState from '../../components/common/EmptyState'
 import StatusBadge from '../../components/common/StatusBadge'
-import { getShopOrders } from '../../services/shopService'
+import { getShopOrders, updateShopOrder } from '../../services/shopService'
+import { errorMessage } from '../../services/api'
 
 const ShopOrders = () => {
   const [orders, setOrders] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('ALL')
+  const [busy, setBusy] = useState(null)
+
+  const act = async (id, action) => {
+    if (action === 'cancel' && !window.confirm('Cancel this order? Items go back into stock.')) return
+    setBusy(id + action); setLoadError('')
+    try {
+      const updated = await updateShopOrder(id, action)
+      setOrders(prev => prev.map(o => o.id === id ? updated : o))
+    } catch (err) {
+      setLoadError(errorMessage(err, 'Could not update the order.'))
+    } finally {
+      setBusy(null)
+    }
+  }
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const data = await getShopOrders()
         setOrders(Array.isArray(data) ? data : [])
-      } catch {
-        setOrders([
-          { id: 101, customerName: 'Priya Sharma', items: [{ name: 'Floral Dress', qty: 1 }], total: 447, status: 'DELIVERED', createdAt: '2024-03-01' },
-          { id: 102, customerName: 'Rahul Mehta', items: [{ name: 'Formal Blazer', qty: 1 }], total: 850, status: 'PROCESSING', createdAt: '2024-03-07' },
-          { id: 103, customerName: 'Sneha K.', items: [{ name: 'Denim Jacket', qty: 2 }], total: 398, status: 'ASSIGNED', createdAt: '2024-03-08' },
-        ])
+      } catch (err) {
+        setLoadError(errorMessage(err, 'Could not load data.'))
+        setOrders([])
       } finally {
         setLoading(false)
       }
@@ -27,14 +40,15 @@ const ShopOrders = () => {
     fetchData()
   }, [])
 
-  const statuses = ['ALL', 'PENDING', 'PROCESSING', 'ASSIGNED', 'DELIVERED', 'CANCELLED']
+  const statuses = ['ALL', 'PENDING', 'PROCESSING', 'ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
   const filtered = filter === 'ALL' ? orders : orders.filter(o => o.status === filter)
-  const revenue = orders.filter(o => o.status === 'DELIVERED').reduce((s, o) => s + (o.total ?? 0), 0)
+  const revenue = orders.filter(o => o.status === 'DELIVERED').reduce((s, o) => s + (o.subtotal ?? 0), 0)
 
   if (loading) return <LoadingSpinner text="Loading orders…" accent="var(--accent-shop)" />
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title">Shop Orders</h1>
@@ -77,6 +91,12 @@ const ShopOrders = () => {
                   <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: 'var(--accent-user)' }}>
                     ₹{(order.total ?? 0).toLocaleString('en-IN')}
                   </div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10, justifyContent: 'flex-end' }}>
+                    {order.status === 'PENDING' && <button className="btn btn-sm btn-shop" disabled={!!busy} onClick={() => act(order.id, 'accept')}>Accept</button>}
+                    {order.status === 'PROCESSING' && <button className="btn btn-sm btn-success" disabled={!!busy} onClick={() => act(order.id, 'dispatch')}>Ready – assign delivery</button>}
+                    {['PENDING', 'PROCESSING'].includes(order.status) && <button className="btn btn-sm btn-danger" disabled={!!busy} onClick={() => act(order.id, 'cancel')}>Cancel</button>}
+                  </div>
+                  {order.deliveryAgentName && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>🛵 {order.deliveryAgentName}</div>}
                 </div>
               </div>
             </div>

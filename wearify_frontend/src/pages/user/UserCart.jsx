@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import EmptyState from '../../components/common/EmptyState'
 import { getMyCart, updateCartItem, removeCartItem } from '../../services/cartService'
+import { errorMessage } from '../../services/api'
 
 const UserCart = () => {
   const [cartItems, setCartItems] = useState([])
@@ -10,16 +11,15 @@ const UserCart = () => {
   const [updating, setUpdating] = useState(null)
   const navigate = useNavigate()
 
+  const [error, setError] = useState('')
+
   const fetchCart = async () => {
     setLoading(true)
     try {
       const data = await getMyCart()
-      setCartItems(Array.isArray(data) ? data : (data?.items ?? []))
-    } catch {
-      setCartItems([
-        { id: 1, productId: 1, productName: 'Floral Summer Dress', shopName: 'Trendy Threads', price: 99, quantity: 1, size: 'M' },
-        { id: 2, productId: 2, productName: 'Classic Formal Blazer', shopName: 'Style Hub', price: 299, quantity: 1, size: 'L' },
-      ])
+      setCartItems(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setError(errorMessage(err, 'Could not load your cart.'))
     } finally {
       setLoading(false)
     }
@@ -30,29 +30,30 @@ const UserCart = () => {
   const handleQtyChange = async (item, delta) => {
     const newQty = item.quantity + delta
     if (newQty < 1) return
-    setUpdating(item.id)
+    setUpdating(item.id); setError('')
     try {
-      await updateCartItem({ cartItemId: item.id, quantity: newQty })
-      setCartItems(prev => prev.map(i => i.id === item.id ? { ...i, quantity: newQty } : i))
-    } catch {
-      // optimistic fallback
-      setCartItems(prev => prev.map(i => i.id === item.id ? { ...i, quantity: newQty } : i))
+      setCartItems(await updateCartItem({ cartItemId: item.id, quantity: newQty }))
+    } catch (err) {
+      setError(errorMessage(err, 'Could not update quantity.'))
     } finally {
       setUpdating(null)
     }
   }
 
   const handleRemove = async (itemId) => {
-    setUpdating(itemId)
+    setUpdating(itemId); setError('')
     try {
-      await removeCartItem(itemId)
-    } catch { /* allow offline remove */ }
-    setCartItems(prev => prev.filter(i => i.id !== itemId))
-    setUpdating(null)
+      setCartItems(await removeCartItem(itemId))
+    } catch (err) {
+      setError(errorMessage(err, 'Could not remove item.'))
+    } finally {
+      setUpdating(null)
+    }
   }
 
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0)
-  const delivery = subtotal > 0 ? 49 : 0
+  const shopCount = new Set(cartItems.map(i => i.shopId)).size
+  const delivery = shopCount * 49
   const total = subtotal + delivery
 
   if (loading) return <LoadingSpinner text="Loading cart…" accent="var(--accent-user)" />
@@ -68,6 +69,8 @@ const UserCart = () => {
           </div>
         </div>
 
+        {error && <div className="alert-strip alert-error">{error}</div>}
+
         {cartItems.length === 0 ? (
           <div className="card">
             <EmptyState
@@ -81,7 +84,9 @@ const UserCart = () => {
           <div className="card" style={{ padding: 0 }}>
             {cartItems.map(item => (
               <div key={item.id} className="cart-item">
-                <div className="cart-item-image">👗</div>
+                <div className="cart-item-image" style={{ overflow: 'hidden' }}>
+                  {item.image ? <img src={item.image} alt={item.productName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👗'}
+                </div>
                 <div className="cart-item-info">
                   <div className="cart-item-name">{item.productName}</div>
                   <div className="cart-item-price">
@@ -89,7 +94,8 @@ const UserCart = () => {
                     {item.size && <span style={{ marginLeft: 8 }} className="tag">Size: {item.size}</span>}
                   </div>
                   <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--accent-user)', marginTop: 6 }}>
-                    ₹{item.price}/day
+                    ₹{item.price}{item.type === 'RENT' ? '/day' : ''}
+                    <span className="tag" style={{ marginLeft: 8, fontFamily: 'var(--font-body)' }}>{item.type === 'RENT' ? 'Rent' : 'Buy'}</span>
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
@@ -120,7 +126,7 @@ const UserCart = () => {
               <span>₹{subtotal.toLocaleString('en-IN')}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--text-secondary)' }}>
-              <span>Delivery Fee</span>
+              <span>Delivery Fee{shopCount > 1 ? ` (${shopCount} shops)` : ''}</span>
               <span>₹{delivery}</span>
             </div>
             <div className="divider" />

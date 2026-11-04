@@ -3,9 +3,11 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import EmptyState from '../../components/common/EmptyState'
 import StatusBadge from '../../components/common/StatusBadge'
 import { getAllDeliveryAgents } from '../../services/adminService'
+import { errorMessage } from '../../services/api'
 
 const AdminDelivery = () => {
   const [agents, setAgents] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -13,12 +15,9 @@ const AdminDelivery = () => {
       try {
         const data = await getAllDeliveryAgents()
         setAgents(Array.isArray(data) ? data : [])
-      } catch {
-        setAgents([
-          { id: 1, name: 'Vijay Kumar', email: 'vijay@example.com', phone: '9000011111', deliveredCount: 43, status: 'ACTIVE' },
-          { id: 2, name: 'Rohan Das', email: 'rohan@example.com', phone: '9000022222', deliveredCount: 29, status: 'ACTIVE' },
-          { id: 3, name: 'Suresh Yadav', email: 'suresh@example.com', phone: '9000033333', deliveredCount: 67, status: 'ACTIVE' },
-        ])
+      } catch (err) {
+        setLoadError(errorMessage(err, 'Could not load data.'))
+        setAgents([])
       } finally {
         setLoading(false)
       }
@@ -30,6 +29,7 @@ const AdminDelivery = () => {
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title">Delivery Agents</h1>

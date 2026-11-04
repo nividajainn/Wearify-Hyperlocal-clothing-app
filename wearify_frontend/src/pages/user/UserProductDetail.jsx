@@ -4,12 +4,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { getProductById } from '../../services/productService'
 import { addToCart } from '../../services/cartService'
-
-const DEMO = {
-  id: 1, name: 'Floral Summer Dress', shopName: 'Trendy Threads', price: 299, rentalPrice: 99,
-  category: 'Dresses', available: true, description: 'A beautiful floral summer dress perfect for casual outings, beach trips, or festive gatherings. Made from breathable cotton fabric with elegant floral prints.',
-  sizes: ['XS', 'S', 'M', 'L', 'XL'], colors: ['Multicolor', 'Blue', 'Pink'], image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80'
-}
+import { errorMessage } from '../../services/api'
 
 const UserProductDetail = () => {
   const { id } = useParams()
@@ -28,8 +23,8 @@ const UserProductDetail = () => {
       try {
         const data = await getProductById(id)
         setProduct(data)
-      } catch {
-        setProduct({ ...DEMO, id })
+      } catch (err) {
+        setError(errorMessage(err, 'Could not load this product.'))
       } finally {
         setLoading(false)
       }
@@ -42,17 +37,17 @@ const UserProductDetail = () => {
     setCartLoading(true); setCartMsg('')
     try {
       await addToCart({ productId: product.id, quantity: qty, size: selectedSize, type })
-      setCartMsg(`Success: Added to cart for ${type}!`)
+      setCartMsg(`Success: Added to cart to ${type.toLowerCase()}.`)
       setTimeout(() => setCartMsg(''), 3000)
-    } catch {
-      setCartMsg('Error: Failed to add to cart. Please try again.')
+    } catch (err) {
+      setCartMsg(`Error: ${errorMessage(err, 'Failed to add to cart.')}`)
     } finally {
       setCartLoading(false)
     }
   }
 
   if (loading) return <LoadingSpinner text="Loading product…" accent="var(--accent-user)" />
-  if (error) return <ErrorMessage message={error} />
+  if (error) return <ErrorMessage message={error} onRetry={() => navigate('/user/products')} />
   if (!product) return null
 
   return (
@@ -78,12 +73,12 @@ const UserProductDetail = () => {
           <p style={{ fontSize: 16, color: 'var(--text-secondary)', marginBottom: 8 }}>{product.shopName}</p>
 
           <div style={{ display: 'flex', gap: 30, margin: '24px 0', alignItems: 'baseline' }}>
-            <div>
+            {product.rentalPrice != null && <div>
               <div style={{ fontSize: 28, fontFamily: 'var(--font-body)', fontWeight: 400, color: 'var(--text-primary)' }}>
                 ₹{product.rentalPrice} <span style={{fontSize: 16, color: 'var(--text-muted)'}}>/ DAY RENT</span>
               </div>
-            </div>
-            {product.price && (
+            </div>}
+            {product.price != null && (
               <div>
                 <div style={{ fontSize: 28, fontFamily: 'var(--font-body)', fontWeight: 400, color: 'var(--text-primary)' }}>
                   ₹{product.price} <span style={{fontSize: 16, color: 'var(--text-muted)'}}>BUY</span>
@@ -125,10 +120,16 @@ const UserProductDetail = () => {
             <div className="qty-control">
               <button className="qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
               <span className="qty-value" style={{ fontSize: 16 }}>{qty}</span>
-              <button className="qty-btn" onClick={() => setQty(q => q + 1)}>+</button>
+              <button className="qty-btn" onClick={() => setQty(q => Math.min(product.stock || 1, q + 1))}>+</button>
             </div>
+            <span style={{ fontSize: 13, color: product.available ? 'var(--text-muted)' : '#dc2626' }}>
+              {product.available ? `${product.stock} in stock` : 'Currently unavailable'}
+            </span>
           </div>
 
+          {cartMsg.startsWith('Success') && (
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('/user/cart')} style={{ marginBottom: 8 }}>Go to cart →</button>
+          )}
           {cartMsg && (
             <div className={`alert-strip ${cartMsg.startsWith('Success') ? 'alert-success' : 'alert-error'}`} style={{ marginBottom: 12 }}>
               {cartMsg}
@@ -136,15 +137,15 @@ const UserProductDetail = () => {
           )}
 
           <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
-            <button
+            {product.rentalPrice != null && <button
               className="btn btn-outline btn-lg"
               onClick={() => handleAddToCart('RENT')}
               disabled={cartLoading || !product.available}
               style={{ flex: 1 }}
             >
               {cartLoading ? '...' : `RENT - ₹${product.rentalPrice}/DAY`}
-            </button>
-            {product.price && (
+            </button>}
+            {product.price != null && (
               <button
                 className="btn btn-primary btn-lg"
                 onClick={() => handleAddToCart('BUY')}

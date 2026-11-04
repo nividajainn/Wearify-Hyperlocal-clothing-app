@@ -1,18 +1,26 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { getAllProducts } from '../../services/productService'
 
 const categories = [
-  { label: 'Dresses', count: '120+', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80' },
-  { label: 'Formals', count: '80+', image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400&q=80' },
-  { label: 'Jackets', count: '55+', image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80' },
-  { label: 'Casuals', count: '200+', image: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=80' },
-  { label: 'Accessories', count: '90+', image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=400&q=80' },
-  { label: 'Ethnic', count: '160+', image: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=400&q=80' },
+  { label: 'Dresses', image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80' },
+  { label: 'Formals', image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=400&q=80' },
+  { label: 'Jackets', image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&q=80' },
+  { label: 'Casuals', image: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=80' },
+  { label: 'Accessories', image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=400&q=80' },
+  { label: 'Ethnic', image: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=400&q=80' },
 ]
 
 const UserHome = () => {
   const { user } = useAuth()
+  const [products, setProducts] = useState([])
+
+  useEffect(() => {
+    getAllProducts().then(d => setProducts(Array.isArray(d) ? d : [])).catch(() => {})
+  }, [])
+
+  const countFor = (label) => products.filter(p => p.category === label).length
 
   return (
     <div>
@@ -40,9 +48,9 @@ const UserHome = () => {
       {/* Stats Row */}
       <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 32 }}>
         {[
-          { label: 'Partner Shops', value: '28+' },
-          { label: 'Products Listed', value: '700+' },
-          { label: 'Same-Day Delivery', value: '4hr' },
+          { label: 'Partner Shops', value: new Set(products.map(p => p.shopId)).size },
+          { label: 'Products Available', value: products.length },
+          { label: 'Delivery Fee per Shop', value: '₹49' },
         ].map(s => (
           <div key={s.label} className="stat-card" style={{ borderLeft: '3px solid var(--accent-primary)' }}>
             <div className="stat-info">
@@ -63,7 +71,7 @@ const UserHome = () => {
           {categories.map(cat => (
             <Link
               key={cat.label}
-              to="/user/products"
+              to={`/user/products?category=${encodeURIComponent(cat.label)}`}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -79,7 +87,7 @@ const UserHome = () => {
               <img src={cat.image} alt={cat.label} style={{ width: '100%', height: 140, objectFit: 'cover' }} />
               <div style={{ padding: '14px 12px' }}>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>{cat.label}</span>
-                <span style={{ display: 'block', fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{cat.count} items</span>
+                <span style={{ display: 'block', fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{countFor(cat.label)} item{countFor(cat.label) === 1 ? '' : 's'}</span>
               </div>
             </Link>
           ))}

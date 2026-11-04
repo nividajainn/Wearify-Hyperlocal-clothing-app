@@ -3,6 +3,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import EmptyState from '../../components/common/EmptyState'
 import StatusBadge from '../../components/common/StatusBadge'
 import { getAssignedOrders, markPickup, markOutForDelivery, markDelivered } from '../../services/deliveryService'
+import { errorMessage } from '../../services/api'
 
 const NEXT_ACTION = {
   ASSIGNED: { label: '📦 Mark Picked Up', action: 'pickup', btnClass: 'btn-shop' },
@@ -11,6 +12,7 @@ const NEXT_ACTION = {
 
 const DeliveryAssigned = () => {
   const [orders, setOrders] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(null)
   const [msg, setMsg] = useState('')
@@ -20,11 +22,9 @@ const DeliveryAssigned = () => {
     try {
       const data = await getAssignedOrders()
       setOrders(Array.isArray(data) ? data : [])
-    } catch {
-      setOrders([
-        { id: 201, customerName: 'Priya Sharma', address: '12, MG Road, Andheri East, Mumbai – 400069', shopName: 'Trendy Threads', total: 447, status: 'ASSIGNED', items: [{ name: 'Floral Dress', qty: 1 }] },
-        { id: 202, customerName: 'Rahul Mehta', address: '34, Linking Road, Bandra West, Mumbai – 400050', shopName: 'Style Hub', total: 850, status: 'OUT_FOR_DELIVERY', items: [{ name: 'Formal Blazer', qty: 1 }] },
-      ])
+    } catch (err) {
+      setLoadError(errorMessage(err, 'Could not load data.'))
+      setOrders([])
     } finally {
       setLoading(false)
     }
@@ -58,6 +58,7 @@ const DeliveryAssigned = () => {
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title">Assigned Orders</h1>

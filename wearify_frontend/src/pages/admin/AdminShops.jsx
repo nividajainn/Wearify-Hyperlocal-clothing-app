@@ -4,9 +4,11 @@ import ErrorMessage from '../../components/common/ErrorMessage'
 import EmptyState from '../../components/common/EmptyState'
 import StatusBadge from '../../components/common/StatusBadge'
 import { getAllShops, approveShop, rejectShop } from '../../services/adminService'
+import { errorMessage } from '../../services/api'
 
 const AdminShops = () => {
   const [shops, setShops] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('ALL')
@@ -17,13 +19,9 @@ const AdminShops = () => {
     try {
       const data = await getAllShops()
       setShops(Array.isArray(data) ? data : [])
-    } catch {
-      setShops([
-        { id: 1, name: 'Trendy Threads', email: 'trendy@example.com', ownerName: 'Amit Singh', status: 'APPROVED', createdAt: '2024-01-10' },
-        { id: 2, name: 'Style Hub', email: 'stylehub@example.com', ownerName: 'Meera Nair', status: 'PENDING', createdAt: '2024-03-01' },
-        { id: 3, name: 'Glamour Zone', email: 'glamour@example.com', ownerName: 'Riya Desai', status: 'PENDING', createdAt: '2024-03-05' },
-        { id: 4, name: 'Urban Drip', email: 'urban@example.com', ownerName: 'Karan Patel', status: 'REJECTED', createdAt: '2024-02-15' },
-      ])
+    } catch (err) {
+      setLoadError(errorMessage(err, 'Could not load data.'))
+      setShops([])
     } finally {
       setLoading(false)
     }
@@ -57,6 +55,7 @@ const AdminShops = () => {
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title">Shops</h1>

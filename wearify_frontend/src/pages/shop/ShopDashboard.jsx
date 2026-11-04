@@ -2,26 +2,21 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import StatCard from '../../components/common/StatCard'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
-import { getShopProducts, getShopOrders } from '../../services/shopService'
+import { getShopProducts, getShopOrders, getMyShop } from '../../services/shopService'
 
 const ShopDashboard = () => {
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [shop, setShop] = useState(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [p, o] = await Promise.allSettled([getShopProducts(), getShopOrders()])
-        setProducts(p.status === 'fulfilled' && Array.isArray(p.value) ? p.value : [
-          { id: 1, name: 'Floral Dress', price: 99, available: true },
-          { id: 2, name: 'Denim Jacket', price: 199, available: true },
-          { id: 3, name: 'Formal Blazer', price: 299, available: false },
-        ])
-        setOrders(o.status === 'fulfilled' && Array.isArray(o.value) ? o.value : [
-          { id: 101, customerName: 'Priya S.', total: 447, status: 'DELIVERED' },
-          { id: 102, customerName: 'Rahul M.', total: 850, status: 'PROCESSING' },
-        ])
+        const [p, o, sh] = await Promise.allSettled([getShopProducts(), getShopOrders(), getMyShop()])
+        setProducts(p.status === 'fulfilled' && Array.isArray(p.value) ? p.value : [])
+        setOrders(o.status === 'fulfilled' && Array.isArray(o.value) ? o.value : [])
+        if (sh.status === 'fulfilled') setShop(sh.value)
       } finally {
         setLoading(false)
       }
@@ -29,7 +24,7 @@ const ShopDashboard = () => {
     fetchData()
   }, [])
 
-  const revenue = orders.reduce((s, o) => s + (o.total ?? 0), 0)
+  const revenue = orders.filter(o => o.status === 'DELIVERED').reduce((s, o) => s + (o.subtotal ?? 0), 0)
 
   if (loading) return <LoadingSpinner text="Loading dashboard…" accent="var(--accent-shop)" />
 
@@ -42,6 +37,14 @@ const ShopDashboard = () => {
         </div>
         <Link to="/shop/add-product" className="btn btn-shop">+ Add Product</Link>
       </div>
+
+      {shop && shop.status !== 'APPROVED' && (
+        <div className={`alert-strip ${shop.status === 'REJECTED' ? 'alert-error' : 'alert-warning'}`}>
+          {shop.status === 'REJECTED'
+            ? `${shop.name} was not approved. Contact the Wearify team for details.`
+            : `${shop.name} is waiting for admin approval. You can add products now; customers will see them once you're approved.`}
+        </div>
+      )}
 
       <div className="stats-grid">
         <StatCard icon="👔" label="Total Products" value={products.length} color="amber" />
@@ -57,6 +60,7 @@ const ShopDashboard = () => {
             <h3 className="card-title">Recent Orders</h3>
             <Link to="/shop/orders" style={{ fontSize: 13, color: 'var(--accent-shop)', fontWeight: 600 }}>View All →</Link>
           </div>
+          {orders.length === 0 && <div style={{ padding: '20px 0', color: 'var(--text-muted)', fontSize: 14 }}>No orders yet.</div>}
           {orders.slice(0, 5).map(order => (
             <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-default)' }}>
               <div>
@@ -65,7 +69,7 @@ const ShopDashboard = () => {
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--accent-user)' }}>₹{order.total}</div>
-                <span className={`badge badge-${(order.status || '').toLowerCase()}`} style={{ fontSize: 11 }}>{order.status}</span>
+                <span className={`badge badge-${(order.status || '').toLowerCase().replace(/_/g, '-')}`} style={{ fontSize: 11 }}>{order.status}</span>
               </div>
             </div>
           ))}
@@ -80,7 +84,7 @@ const ShopDashboard = () => {
           {products.slice(0, 5).map(p => (
             <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-default)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 20 }}>👗</span>
+                {p.image ? <img src={p.image} alt="" style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }} /> : <span style={{ fontSize: 20 }}>👗</span>}
                 <span style={{ fontSize: 14, fontWeight: 600 }}>{p.name}</span>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
