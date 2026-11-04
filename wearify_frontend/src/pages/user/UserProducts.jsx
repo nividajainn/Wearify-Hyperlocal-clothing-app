@@ -1,26 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import EmptyState from '../../components/common/EmptyState'
 import { getAllProducts } from '../../services/productService'
-
-const DEMO_PRODUCTS = [
-  { id: 1, name: 'Floral Summer Dress', shopName: 'Trendy Threads', price: 299, rentalPrice: 99, category: 'Dresses', available: true, image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=80' },
-  { id: 2, name: 'Classic Formal Blazer', shopName: 'Style Hub', price: 1200, rentalPrice: 299, category: 'Formals', available: true, image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&q=80' },
-  { id: 3, name: 'Denim Jacket', shopName: 'Urban Drip', price: 899, rentalPrice: 199, category: 'Jackets', available: true, image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&q=80' },
-  { id: 4, name: 'Silk Saree', shopName: 'Ethnic Elegance', price: 2500, rentalPrice: 499, category: 'Ethnic', available: true, image: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=600&q=80' },
-  { id: 5, name: 'Casual Linen Shirt', shopName: 'Trendy Threads', price: 450, rentalPrice: 120, category: 'Casuals', available: false, image: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=600&q=80' },
-  { id: 6, name: 'Party Gown', shopName: 'Style Hub', price: 3200, rentalPrice: 799, category: 'Dresses', available: true, image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600&q=80' },
-  { id: 7, name: 'Leather Biker Jacket', shopName: 'Urban Drip', price: 2800, rentalPrice: 450, category: 'Jackets', available: true, image: 'https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?w=600&q=80' },
-  { id: 8, name: 'Cotton Kurta Set', shopName: 'Ethnic Elegance', price: 1500, rentalPrice: 350, category: 'Ethnic', available: true, image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&q=80' },
-]
+import { errorMessage } from '../../services/api'
 
 const UserProducts = () => {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [params, setParams] = useSearchParams()
+  const category = params.get('category') || 'All'
   const navigate = useNavigate()
 
   const fetchData = async () => {
@@ -28,8 +20,8 @@ const UserProducts = () => {
     try {
       const data = await getAllProducts()
       setProducts(Array.isArray(data) ? data : [])
-    } catch {
-      setProducts(DEMO_PRODUCTS)
+    } catch (err) {
+      setError(errorMessage(err, 'Could not load products.'))
     } finally {
       setLoading(false)
     }
@@ -37,10 +29,14 @@ const UserProducts = () => {
 
   useEffect(() => { fetchData() }, [])
 
+  const categories = ['All', ...Array.from(new Set(products.map(p => p.category).filter(Boolean))).sort()]
+  const q = search.toLowerCase()
   const filtered = products.filter(p =>
-    p.name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.shopName?.toLowerCase().includes(search.toLowerCase()) ||
-    p.category?.toLowerCase().includes(search.toLowerCase())
+    (category === 'All' || p.category === category) && (
+      p.name?.toLowerCase().includes(q) ||
+      p.shopName?.toLowerCase().includes(q) ||
+      p.category?.toLowerCase().includes(q)
+    )
   )
 
   if (loading) return <LoadingSpinner text="Fetching products…" accent="var(--accent-user)" />
@@ -62,8 +58,18 @@ const UserProducts = () => {
         />
       </div>
 
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        {categories.map(c => (
+          <button
+            key={c}
+            className={`btn btn-sm ${category === c ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setParams(c === 'All' ? {} : { category: c })}
+          >{c}</button>
+        ))}
+      </div>
+
       {filtered.length === 0 ? (
-        <EmptyState title="No products found" text="Try a different search term." />
+        <EmptyState title="No products found" text={products.length ? 'Try a different search or category.' : 'Shops near you haven\'t listed anything yet.'} />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 24 }}>
           {filtered.map(product => (
@@ -95,8 +101,8 @@ const UserProducts = () => {
                   <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>{product.category}</span>
                 )}
                 <div style={{ display: 'flex', gap: 16, marginTop: 14, fontSize: 15, fontWeight: 500 }}>
-                  {product.rentalPrice && <div><span style={{ color: 'var(--text-muted)' }}>Rent</span> ₹{product.rentalPrice}/day</div>}
-                  {product.price && <div><span style={{ color: 'var(--text-muted)' }}>Buy</span> ₹{product.price}</div>}
+                  {product.rentalPrice != null && <div><span style={{ color: 'var(--text-muted)' }}>Rent</span> ₹{product.rentalPrice}/day</div>}
+                  {product.price != null && <div><span style={{ color: 'var(--text-muted)' }}>Buy</span> ₹{product.price}</div>}
                 </div>
                 {!product.available && (
                   <span className="badge badge-pending" style={{ marginTop: 8 }}>Unavailable</span>

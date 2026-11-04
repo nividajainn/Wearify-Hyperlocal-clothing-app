@@ -1,0 +1,16 @@
+[build]
+  base = "wearify_frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+
+# Single-page app: let React Router handle every page URL
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

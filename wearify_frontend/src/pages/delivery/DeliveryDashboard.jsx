@@ -4,9 +4,11 @@ import StatCard from '../../components/common/StatCard'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import StatusBadge from '../../components/common/StatusBadge'
 import { getAssignedOrders } from '../../services/deliveryService'
+import { errorMessage } from '../../services/api'
 
 const DeliveryDashboard = () => {
   const [orders, setOrders] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -14,11 +16,9 @@ const DeliveryDashboard = () => {
       try {
         const data = await getAssignedOrders()
         setOrders(Array.isArray(data) ? data : [])
-      } catch {
-        setOrders([
-          { id: 201, customerName: 'Priya Sharma', address: '12, MG Road, Mumbai', status: 'ASSIGNED', total: 447 },
-          { id: 202, customerName: 'Rahul Mehta', address: '34, Bandra West, Mumbai', status: 'OUT_FOR_DELIVERY', total: 850 },
-        ])
+      } catch (err) {
+        setLoadError(errorMessage(err, 'Could not load data.'))
+        setOrders([])
       } finally {
         setLoading(false)
       }
@@ -34,6 +34,7 @@ const DeliveryDashboard = () => {
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title">Delivery Dashboard</h1>

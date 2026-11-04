@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import EmptyState from '../../components/common/EmptyState'
 import { getShopProducts, deleteShopProduct } from '../../services/shopService'
+import { errorMessage } from '../../services/api'
 
 const ShopProducts = () => {
   const [products, setProducts] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState(null)
   const [msg, setMsg] = useState('')
@@ -15,12 +17,9 @@ const ShopProducts = () => {
     try {
       const data = await getShopProducts()
       setProducts(Array.isArray(data) ? data : [])
-    } catch {
-      setProducts([
-        { id: 1, name: 'Floral Summer Dress', category: 'Dresses', price: 299, rentalPrice: 99, available: true, stock: 3 },
-        { id: 2, name: 'Classic Formal Blazer', category: 'Formals', price: 1200, rentalPrice: 299, available: true, stock: 2 },
-        { id: 3, name: 'Denim Jacket', category: 'Jackets', price: 899, rentalPrice: 199, available: false, stock: 0 },
-      ])
+    } catch (err) {
+      setLoadError(errorMessage(err, 'Could not load data.'))
+      setProducts([])
     } finally {
       setLoading(false)
     }
@@ -47,6 +46,7 @@ const ShopProducts = () => {
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title">My Products</h1>

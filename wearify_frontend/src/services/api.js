@@ -1,35 +1,15 @@
 import axios from 'axios'
 
+// Same-origin Netlify Function. The Identity session cookie (nf_jwt) is sent automatically.
 const api = axios.create({
-  baseURL: 'http://localhost:8081',
+  baseURL: '/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
   timeout: 15000,
 })
 
-// Request interceptor — attach JWT token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('wearify_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  (error) => Promise.reject(error)
-)
-
-// Response interceptor — handle 401
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('wearify_token')
-      localStorage.removeItem('wearify_role')
-      localStorage.removeItem('wearify_user')
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  }
-)
+// Turn server errors into readable messages for the UI
+export const errorMessage = (err, fallback = 'Something went wrong. Please try again.') =>
+  err?.response?.data?.message || err?.message || fallback
 
 export default api

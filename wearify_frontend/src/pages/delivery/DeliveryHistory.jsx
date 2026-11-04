@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import EmptyState from '../../components/common/EmptyState'
 import { getAssignedOrders } from '../../services/deliveryService'
+import { errorMessage } from '../../services/api'
 
 const DeliveryHistory = () => {
   const [delivered, setDelivered] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -13,12 +15,9 @@ const DeliveryHistory = () => {
         const data = await getAssignedOrders()
         const all = Array.isArray(data) ? data : []
         setDelivered(all.filter(o => o.status === 'DELIVERED'))
-      } catch {
-        setDelivered([
-          { id: 199, customerName: 'Anjali R.', address: 'Dadar West, Mumbai', total: 350, createdAt: '2024-03-05' },
-          { id: 198, customerName: 'Vikas M.', address: 'Borivali East, Mumbai', total: 650, createdAt: '2024-03-04' },
-          { id: 197, customerName: 'Pooja S.', address: 'Andheri West, Mumbai', total: 1100, createdAt: '2024-03-03' },
-        ])
+      } catch (err) {
+        setLoadError(errorMessage(err, 'Could not load data.'))
+        setDelivered([])
       } finally {
         setLoading(false)
       }
@@ -32,6 +31,7 @@ const DeliveryHistory = () => {
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title">Delivery History</h1>

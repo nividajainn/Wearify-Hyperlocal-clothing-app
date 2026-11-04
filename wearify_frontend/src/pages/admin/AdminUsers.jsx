@@ -4,9 +4,11 @@ import ErrorMessage from '../../components/common/ErrorMessage'
 import EmptyState from '../../components/common/EmptyState'
 import StatusBadge from '../../components/common/StatusBadge'
 import { getAllUsers } from '../../services/adminService'
+import { errorMessage } from '../../services/api'
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -16,12 +18,9 @@ const AdminUsers = () => {
     try {
       const data = await getAllUsers()
       setUsers(Array.isArray(data) ? data : [])
-    } catch {
-      setUsers([
-        { id: 1, name: 'Priya Sharma', email: 'priya@example.com', phone: '9876543210', status: 'ACTIVE', createdAt: '2024-01-15' },
-        { id: 2, name: 'Rahul Mehta', email: 'rahul@example.com', phone: '9123456789', status: 'ACTIVE', createdAt: '2024-02-01' },
-        { id: 3, name: 'Sneha Kapoor', email: 'sneha@example.com', phone: '9988776655', status: 'ACTIVE', createdAt: '2024-02-20' },
-      ])
+    } catch (err) {
+      setLoadError(errorMessage(err, 'Could not load data.'))
+      setUsers([])
     } finally {
       setLoading(false)
     }
@@ -39,6 +38,7 @@ const AdminUsers = () => {
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title">Users</h1>

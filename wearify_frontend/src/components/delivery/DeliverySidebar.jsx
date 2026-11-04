@@ -12,7 +12,7 @@ const DeliverySidebar = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
-  const handleLogout = () => { logout(); navigate('/login') }
+  const handleLogout = async () => { await logout(); navigate('/login') }
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'D'
 
   return (

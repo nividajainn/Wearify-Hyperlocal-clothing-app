@@ -3,9 +3,11 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import EmptyState from '../../components/common/EmptyState'
 import StatusBadge from '../../components/common/StatusBadge'
 import { getShopOrders } from '../../services/shopService'
+import { errorMessage } from '../../services/api'
 
 const ShopOrders = () => {
   const [orders, setOrders] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('ALL')
 
@@ -14,12 +16,9 @@ const ShopOrders = () => {
       try {
         const data = await getShopOrders()
         setOrders(Array.isArray(data) ? data : [])
-      } catch {
-        setOrders([
-          { id: 101, customerName: 'Priya Sharma', items: [{ name: 'Floral Dress', qty: 1 }], total: 447, status: 'DELIVERED', createdAt: '2024-03-01' },
-          { id: 102, customerName: 'Rahul Mehta', items: [{ name: 'Formal Blazer', qty: 1 }], total: 850, status: 'PROCESSING', createdAt: '2024-03-07' },
-          { id: 103, customerName: 'Sneha K.', items: [{ name: 'Denim Jacket', qty: 2 }], total: 398, status: 'ASSIGNED', createdAt: '2024-03-08' },
-        ])
+      } catch (err) {
+        setLoadError(errorMessage(err, 'Could not load data.'))
+        setOrders([])
       } finally {
         setLoading(false)
       }
@@ -35,6 +34,7 @@ const ShopOrders = () => {
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title">Shop Orders</h1>

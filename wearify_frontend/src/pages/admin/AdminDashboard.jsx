@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import LoadingSpinner from '../../components/common/LoadingSpinner'
 import ErrorMessage from '../../components/common/ErrorMessage'
 import { getAdminDashboard } from '../../services/adminService'
+import { errorMessage } from '../../services/api'
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null)
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -14,8 +16,9 @@ const AdminDashboard = () => {
     try {
       const data = await getAdminDashboard()
       setStats(data)
-    } catch {
-      setStats({ totalUsers: 142, totalShops: 28, totalOrders: 374, totalRevenue: 89420, pendingShops: 5, activeDelivery: 12 })
+    } catch (err) {
+      setLoadError(errorMessage(err, 'Could not load data.'))
+      setStats(null)
     } finally {
       setLoading(false)
     }
@@ -44,6 +47,7 @@ const AdminDashboard = () => {
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title" style={{ fontSize: 30 }}>Platform Overview</h1>

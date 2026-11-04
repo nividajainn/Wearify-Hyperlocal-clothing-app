@@ -2,6 +2,7 @@ import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { getRoleRedirect } from '../utils/getRoleRedirect'
+import LoadingSpinner from '../components/common/LoadingSpinner'
 
 // Guards
 import ProtectedRoute from '../components/common/ProtectedRoute'
@@ -44,7 +45,9 @@ import DeliveryAssigned from '../pages/delivery/DeliveryAssigned'
 import DeliveryHistory from '../pages/delivery/DeliveryHistory'
 
 const AppRoutes = () => {
-  const { isAuthenticated, role } = useAuth()
+  const { isAuthenticated, role, loading } = useAuth()
+
+  if (loading) return <LoadingSpinner text="Loading Wearify…" />
 
   return (
     <Routes>

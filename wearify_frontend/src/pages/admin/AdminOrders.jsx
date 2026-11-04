@@ -3,9 +3,11 @@ import LoadingSpinner from '../../components/common/LoadingSpinner'
 import EmptyState from '../../components/common/EmptyState'
 import StatusBadge from '../../components/common/StatusBadge'
 import { getAllOrders } from '../../services/adminService'
+import { errorMessage } from '../../services/api'
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([])
+  const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('ALL')
 
@@ -14,13 +16,9 @@ const AdminOrders = () => {
       try {
         const data = await getAllOrders()
         setOrders(Array.isArray(data) ? data : [])
-      } catch {
-        setOrders([
-          { id: 101, userId: 1, userName: 'Priya Sharma', shopName: 'Trendy Threads', total: 1200, status: 'DELIVERED', createdAt: '2024-03-01' },
-          { id: 102, userId: 2, userName: 'Rahul Mehta', shopName: 'Style Hub', total: 850, status: 'PROCESSING', createdAt: '2024-03-05' },
-          { id: 103, userId: 3, userName: 'Sneha Kapoor', shopName: 'Trendy Threads', total: 2300, status: 'ASSIGNED', createdAt: '2024-03-06' },
-          { id: 104, userId: 1, userName: 'Priya Sharma', shopName: 'Urban Drip', total: 500, status: 'PENDING', createdAt: '2024-03-07' },
-        ])
+      } catch (err) {
+        setLoadError(errorMessage(err, 'Could not load data.'))
+        setOrders([])
       } finally {
         setLoading(false)
       }
@@ -35,6 +33,7 @@ const AdminOrders = () => {
 
   return (
     <div>
+      {loadError && <div className="alert-strip alert-error">{loadError}</div>}
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-header-title">All Orders</h1>

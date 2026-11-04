@@ -1,45 +1,64 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { handleAuthCallback, onAuthChange, AUTH_EVENTS } from '@netlify/identity'
+import { fetchProfile, logoutUser, currentIdentityUser } from '../services/authService'
 
 const AuthContext = createContext(null)
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem('wearify_token'))
-  const [role, setRole] = useState(() => localStorage.getItem('wearify_role'))
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('wearify_user')
-    try { return stored ? JSON.parse(stored) : null } catch { return null }
-  })
-  const [loading, setLoading] = useState(false)
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [notice, setNotice] = useState('')
 
-  const login = useCallback((data) => {
-    const { token: t, role: r, id, name } = data
-    const userObj = { id, name }
-
-    localStorage.setItem('wearify_token', t)
-    localStorage.setItem('wearify_role', r)
-    localStorage.setItem('wearify_user', JSON.stringify(userObj))
-
-    setToken(t)
-    setRole(r)
-    setUser(userObj)
+  const loadProfile = useCallback(async () => {
+    try {
+      const identityUser = await currentIdentityUser()
+      if (!identityUser) { setProfile(null); return null }
+      const p = await fetchProfile()
+      setProfile(p)
+      return p
+    } catch {
+      setProfile(null)
+      return null
+    }
   }, [])
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('wearify_token')
-    localStorage.removeItem('wearify_role')
-    localStorage.removeItem('wearify_user')
-    setToken(null)
-    setRole(null)
-    setUser(null)
+  useEffect(() => {
+    let active = true
+    const init = async () => {
+      try {
+        const result = await handleAuthCallback()
+        if (result?.type === 'confirmation') setNotice('Email confirmed. Welcome to Wearify!')
+      } catch { /* no callback or invalid token */ }
+      await loadProfile()
+      if (active) setLoading(false)
+    }
+    init()
+    const unsubscribe = onAuthChange((event) => {
+      if (event === AUTH_EVENTS.LOGOUT) setProfile(null)
+    })
+    return () => { active = false; unsubscribe() }
+  }, [loadProfile])
+
+  const login = useCallback((p) => setProfile(p), [])
+
+  const logout = useCallback(async () => {
+    await logoutUser()
+    setProfile(null)
   }, [])
 
-  const isAuthenticated = Boolean(token)
+  const value = {
+    user: profile,
+    role: profile?.role ?? null,
+    isAuthenticated: Boolean(profile),
+    loading,
+    notice,
+    clearNotice: () => setNotice(''),
+    login,
+    logout,
+    refresh: loadProfile,
+  }
 
-  return (
-    <AuthContext.Provider value={{ token, role, user, login, logout, isAuthenticated, loading }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => {

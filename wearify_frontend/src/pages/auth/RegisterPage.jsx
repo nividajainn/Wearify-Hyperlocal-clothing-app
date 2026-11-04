@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { registerUser, registerShop, registerDelivery } from '../../services/authService'
+import { registerAccount } from '../../services/authService'
+import { useAuth } from '../../context/AuthContext'
+import { getRoleRedirect } from '../../utils/getRoleRedirect'
 
 const ROLES = [
   { id: 'USER', icon: 'C', label: 'Customer', className: 'user', desc: 'Browse & rent clothes' },
@@ -10,11 +12,12 @@ const ROLES = [
 
 const RegisterPage = () => {
   const [role, setRole] = useState('USER')
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', shopName: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const handleChange = (e) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -28,19 +31,20 @@ const RegisterPage = () => {
 
     setLoading(true); setError(''); setSuccess('')
     try {
-      const payload = { ...form }
-      if (role === 'USER') await registerUser(payload)
-      else if (role === 'SHOP') await registerShop(payload)
-      else await registerDelivery(payload)
-
+      if (role === 'SHOP' && !form.shopName) { setError('Please enter your shop name.'); setLoading(false); return }
+      const result = await registerAccount(role, form)
+      if (result.confirmed && result.profile) {
+        login(result.profile)
+        navigate(getRoleRedirect(result.profile.role), { replace: true })
+        return
+      }
       setSuccess(
         role === 'SHOP'
-          ? 'Registration submitted! Your shop account is pending admin approval.'
-          : 'Account created successfully! Please sign in.'
+          ? 'Almost there! Confirm your email using the link we just sent. Your shop then goes to an admin for approval.'
+          : 'Almost there! Confirm your email using the link we just sent, then sign in.'
       )
-      setTimeout(() => navigate('/login'), 2500)
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.')
+      setError(err.message || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -74,8 +78,8 @@ const RegisterPage = () => {
           ))}
         </div>
 
-        {error && <div className="alert-strip alert-error">Error: {error}</div>}
-        {success && <div className="alert-strip alert-success">Success: {success}</div>}
+        {error && <div className="alert-strip alert-error">{error}</div>}
+        {success && <div className="alert-strip alert-success">{success}</div>}
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
@@ -113,6 +117,17 @@ const RegisterPage = () => {
               value={form.password} onChange={handleChange} autoComplete="new-password"
             />
           </div>
+
+          {role === 'SHOP' && (
+            <div className="form-group">
+              <label className="form-label">Shop Name</label>
+              <input
+                className="form-input shop"
+                name="shopName" type="text" placeholder="e.g. Trendy Threads"
+                value={form.shopName} onChange={handleChange}
+              />
+            </div>
+          )}
 
           {role === 'SHOP' && (
             <div className="alert-strip alert-warning" style={{ marginBottom: 16 }}>
